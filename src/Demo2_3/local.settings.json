@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "TwilioSID": "ENTER_CORRECT_TwilioSID",
+    "TwilioToken": "ENTER_CORRECT_TwilioToken",
+    "AzureWebJobsDashboard": "ENTER_CORRECT_AzureWebJobsDashboard",
+    "SendGrid_API_Key": "ENTER_CORRECT_SendGrid_API_Key",
+    "AzureWebJobsStorage": "ENTER_CORRECT_AzureWebJobsStorage"
+  }
+}

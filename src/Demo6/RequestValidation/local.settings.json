@@ -1,0 +1,15 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_EXTENSION_VERSION": "~1",
+    "ScmType": "None",
+    "WEBSITE_AUTH_ENABLED": "False",
+    "AzureWebJobsDashboard": "ENTER CONNECTION STRING TO STORAGE",
+    "WEBSITE_NODE_DEFAULT_VERSION": "6.5.0",
+    "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "DefaultEndpointsProtocol=https;AccountName=ENTER CONNECTION STRING TO STORAGE",
+    "WEBSITE_CONTENTSHARE": "ENTER STORAGE NAME",
+    "WEBSITE_SITE_NAME": "RequestValidation",
+    "WEBSITE_SLOT_NAME": "Production",
+    "AzureWebJobsStorage": "ENTER CONNECTION STRING TO STORAGE"
+  }
+}

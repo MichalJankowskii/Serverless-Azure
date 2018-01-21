@@ -1,0 +1,87 @@
+{
+    "$connections": {
+        "value": {
+            "rss": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/rss",
+                "connectionName": "rss",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/rss"
+            },
+            "sendgrid": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/sendgrid-1",
+                "connectionName": "sendgrid-1",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/sendgrid"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Send_email_(V2)": {
+                "inputs": {
+                    "body": {
+                        "from": "ENTER_EMAIL",
+                        "ishtml": true,
+                        "subject": "@triggerBody()?['title']",
+                        "text": "From @{triggerBody()?['primaryLink']}:\n\nTo: @{body('Url_Shortener')}",
+                        "to": "ENTER_EMAIL"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sendgrid']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/mail/send"
+                },
+                "runAfter": {
+                    "Url_Shortener": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Url_Shortener": {
+                "inputs": {
+                    "body": {
+                        "url": "@triggerBody()?['primaryLink']"
+                    },
+                    "function": {
+                        "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/sites/LogicAppsExtension/functions/Url_Shortener"
+                    }
+                },
+                "runAfter": {},
+                "type": "Function"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_a_feed_item_is_published": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['rss']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/OnNewFeed",
+                    "queries": {
+                        "feedUrl": "http://lorem-rss.herokuapp.com/feed?unit=second&interval=5"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "second",
+                    "interval": 15
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "ENTER_CONNECTION_STRING",
+    "AzureWebJobsDashboard": "ENTER_CONNECTION_STRING"
+  }
+}

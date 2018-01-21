@@ -1,0 +1,63 @@
+{
+    "$connections": {
+        "value": {
+            "azuretables": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/Serverless_Azure_Registration_LogicApp/providers/Microsoft.Web/connections/azuretables",
+                "connectionName": "azuretables",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/westeurope/managedApis/azuretables"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Get_entity": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuretables']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/Tables/@{encodeURIComponent('status')}/entities(PartitionKey='@{encodeURIComponent('Status')}',RowKey='@{encodeURIComponent(triggerOutputs()['relativePathParameters']['guid'])}')"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Get_entity')",
+                    "statusCode": 200
+                },
+                "runAfter": {
+                    "Get_entity": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "method": "GET",
+                    "relativePath": "/id/{guid}",
+                    "schema": {
+                        "properties": {},
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    }
+}

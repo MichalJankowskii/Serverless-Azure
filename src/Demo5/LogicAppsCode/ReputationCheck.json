@@ -1,0 +1,130 @@
+{
+    "$connections": {
+        "value": {
+            "azuretables": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/azuretables",
+                "connectionName": "azuretables",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/uksouth/managedApis/azuretables"
+            },
+            "cognitiveservicestextanalytics": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/cognitiveservicestextanalytics",
+                "connectionName": "cognitiveservicestextanalytics",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/uksouth/managedApis/cognitiveservicestextanalytics"
+            },
+            "sendgrid": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/sendgrid",
+                "connectionName": "sendgrid",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/uksouth/managedApis/sendgrid"
+            },
+            "twitter": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/twitter",
+                "connectionName": "twitter",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/uksouth/managedApis/twitter"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Send_email_(V2)": {
+                        "inputs": {
+                            "body": {
+                                "from": "ENTER_EMAIL",
+                                "ishtml": true,
+                                "subject": "We have a problem",
+                                "text": "Somebody does not like #Azure\n\nScore: @{body('Detect_Sentiment')?['score']}\nTweeted by: @{triggerBody()?['TweetedBy']}\nTweet text: @{triggerBody()?['TweetText']}",
+                                "to": "ENTER_EMAIL"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['sendgrid']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/mail/send"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "expression": "@less(body('Detect_Sentiment')?['score'], 0.5)",
+                "runAfter": {
+                    "Insert_or_Replace_Entity": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "Detect_Sentiment": {
+                "inputs": {
+                    "body": {
+                        "text": "@triggerBody()?['TweetText']"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['cognitiveservicestextanalytics']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/sentiment"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Insert_or_Replace_Entity": {
+                "inputs": {
+                    "body": {
+                        "body": "@triggerBody()?['TweetText']",
+                        "score": "@body('Detect_Sentiment')?['score']",
+                        "tweetedby": "@triggerBody()?['TweetedBy']"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuretables']['connectionId']"
+                        }
+                    },
+                    "method": "put",
+                    "path": "/Tables/@{encodeURIComponent('results')}/entities(PartitionKey='@{encodeURIComponent('Cognitive')}',RowKey='@{encodeURIComponent(body('Detect_Sentiment')?['id'])}')"
+                },
+                "runAfter": {
+                    "Detect_Sentiment": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_a_new_tweet_is_posted": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['twitter']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/onnewtweet",
+                    "queries": {
+                        "searchQuery": "#azure"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "second",
+                    "interval": 15
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    }
+}

@@ -1,0 +1,44 @@
+{
+  "bindings": [
+    {
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "post"
+      ],
+      "authLevel": "function"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    },
+    {
+      "type": "table",
+      "name": "customersTable",
+      "tableName": "customers",
+      "connection": "registration1storage_STORAGE",
+      "direction": "out"
+    },
+    {
+      "type": "sendGrid",
+      "name": "emailMessage",
+      "apiKey": "SendGrid_API_Key",
+      "subject": "Welcome",
+      "from": "test@azure.pl",
+      "text": "Thank you for registering!!!",
+      "direction": "out"
+    },
+    {
+      "type": "twilioSms",
+      "name": "smsMessage",
+      "accountSid": "TwilioSID",
+      "authToken": "TwilioToken",
+      "to": "+123456789",
+      "from": "+123456789",
+      "direction": "out"
+    }
+  ],
+  "disabled": false
+}

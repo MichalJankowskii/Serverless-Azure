@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json.schemastore.org/proxies",
+    "proxies": {
+        "Addition": {
+            "matchCondition": {
+                "route": "add?a={a}&b={b}",
+                "methods": [
+                    "GET"
+                ]
+            },
+            "backendUri": "https://calculator2017.azurewebsites.net/api/Addition?code=ENTERYOURCODE&summand1={a}&summand2={b}",
+            "requestOverrides": {
+                "backend.request.querystring.a": "",
+                "backend.request.querystring.b": ""
+            }
+        },
+        "Division": {
+            "matchCondition": {
+                "route": "division?a={a}&b={b}"
+            },
+            "backendUri": "https://calculator2017.azurewebsites.net/api/Division?code=ENTERYOURCODE&dividend={a}&divisor={b}",
+            "requestOverrides": {
+                "backend.request.querystring.a": "",
+                "backend.request.querystring.b": ""
+            }
+        },
+        "Multiplication": {
+            "matchCondition": {
+                "route": "Multiplication?a={a}&b={b}",
+                "methods": [
+                    "GET"
+                ]
+            },
+            "backendUri": "https://calculator2017.azurewebsites.net/api/Multiplication?code=ENTERYOURCODE&multiplicand={a}&multiplier={b}",
+            "requestOverrides": {
+                "backend.request.querystring.a": "",
+                "backend.request.querystring.b": ""
+            }
+        },
+        "Subtraction": {
+            "matchCondition": {
+                "route": "subtraction?a={a}&b={b}",
+                "methods": [
+                    "GET"
+                ]
+            },
+            "backendUri": "https://calculator2017.azurewebsites.net/api/Subtraction?code=ENTERYOURCODE&minuend={a}&subtrahend={b}",
+            "requestOverrides": {
+                "backend.request.querystring.a": "",
+                "backend.request.querystring.b": ""
+            }
+        }
+    }
+}

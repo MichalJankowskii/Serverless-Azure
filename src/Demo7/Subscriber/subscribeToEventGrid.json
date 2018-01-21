@@ -1,0 +1,105 @@
+{
+    "$connections": {
+        "value": {
+            "azureeventgrid": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/EventGridDemo/providers/Microsoft.Web/connections/azureeventgrid",
+                "connectionName": "azureeventgrid",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/azureeventgrid"
+            },
+            "sendgrid": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/EventGridDemo/providers/Microsoft.Web/connections/sendgrid",
+                "connectionName": "sendgrid",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/sendgrid"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Parse_JSON": {
+                "inputs": {
+                    "content": "@triggerBody()?['data']",
+                    "schema": {
+                        "properties": {
+                            "Email": {
+                                "type": "string"
+                            },
+                            "FirstName": {
+                                "type": "string"
+                            },
+                            "LastName": {
+                                "type": "string"
+                            },
+                            "UserName": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {},
+                "type": "ParseJson"
+            },
+            "Send_email_(V2)": {
+                "inputs": {
+                    "body": {
+                        "from": "ENTER_EMAIL",
+                        "ishtml": true,
+                        "subject": "New user: @{body('Parse_JSON')?['FirstName']} - @{body('Parse_JSON')?['LastName']}",
+                        "text": "Event time: @{triggerBody()?['eventTime']}\nEvent type: @{triggerBody()?['eventType']}\nId: @{triggerBody()?['id']}\nSubject: @{triggerBody()?['subject']}\nEmail: @{body('Parse_JSON')?['Email']}\nUser name: @{body('Parse_JSON')?['UserName']}",
+                        "to": "ENTER_EMAIL"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sendgrid']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/mail/send"
+                },
+                "runAfter": {
+                    "Parse_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_a_resource_event_occurs": {
+                "inputs": {
+                    "body": {
+                        "properties": {
+                            "destination": {
+                                "endpointType": "webhook",
+                                "properties": {
+                                    "endpointUrl": "@{listCallbackUrl()}"
+                                }
+                            },
+                            "topic": "/subscriptions/52cda3d1-1af7-4bf2-bc78-6d34ce3b70da/resourceGroups/EventGridDemo/providers/Microsoft.EventGrid/topics/progressiveNetEventGrid"
+                        }
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azureeventgrid']['connectionId']"
+                        }
+                    },
+                    "path": "/subscriptions/@{encodeURIComponent('52cda3d1-1af7-4bf2-bc78-6d34ce3b70da')}/providers/@{encodeURIComponent('Microsoft.EventGrid.topics')}/resource/eventSubscriptions",
+                    "queries": {
+                        "x-ms-api-version": "2017-06-15-preview"
+                    }
+                },
+                "splitOn": "@triggerBody()",
+                "type": "ApiConnectionWebhook"
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "ENTER_CORRECT_AzureWebJobsStorage",
+    "AzureWebJobsDashboard": "ENTER_CORRECT_AzureWebJobsDashboard",
+    "registration2storage_STORAGE": "ENTER_CORRECT_registration2storage_STORAGE",
+    "RequestStatusCheckUrl": "http://localhost:7071/api/RequestStatusCheck?guid=",
+    "AzureWebJobsSendGridApiKey": "ENTER_CORRECT_AzureWebJobsSendGridApiKey",
+    "AzureWebJobsTwilioAccountSid": "ENTER_CORRECT_AzureWebJobsTwilioAccountSid",
+    "AzureWebJobsTwilioAuthToken": "ENTER_CORRECT_AzureWebJobsTwilioAuthToken"
+  }
+}

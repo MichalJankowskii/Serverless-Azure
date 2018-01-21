@@ -1,0 +1,259 @@
+{
+    "$connections": {
+        "value": {
+            "azuretables": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/Serverless_Azure_Registration_LogicApp/providers/Microsoft.Web/connections/azuretables",
+                "connectionName": "azuretables",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/westeurope/managedApis/azuretables"
+            },
+            "sendgrid": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/Serverless_Azure_Registration_LogicApp/providers/Microsoft.Web/connections/sendgrid",
+                "connectionName": "sendgrid",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/westeurope/managedApis/sendgrid"
+            },
+            "twilio": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/Serverless_Azure_Registration_LogicApp/providers/Microsoft.Web/connections/twilio",
+                "connectionName": "twilio",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/westeurope/managedApis/twilio"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Save_OK_to_Status_db": {
+                        "inputs": {
+                            "body": {
+                                "Message": "",
+                                "Status": "OK"
+                            },
+                            "headers": {
+                                "If-Match": "*"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azuretables']['connectionId']"
+                                }
+                            },
+                            "method": "put",
+                            "path": "/Tables/@{encodeURIComponent('status')}/entities/etag(PartitionKey='@{encodeURIComponent('Status')}',RowKey='@{encodeURIComponent(body('Insert_Entity')?['RowKey'])}')"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    },
+                    "Save_data_about_customer": {
+                        "inputs": {
+                            "body": {
+                                "PartitionKey": "cutomer",
+                                "RowKey": "@body('Insert_Entity')?['RowKey']",
+                                "birthyear": "@triggerBody()?['birthyear']",
+                                "country": "@triggerBody()?['country']",
+                                "email": "@triggerBody()?['email']",
+                                "name": "@triggerBody()?['name']",
+                                "surname": "@triggerBody()?['surname']"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['azuretables']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/Tables/@{encodeURIComponent('customers')}/entities"
+                        },
+                        "runAfter": {
+                            "Save_OK_to_Status_db": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Send_Text_Message_(SMS)": {
+                        "inputs": {
+                            "body": {
+                                "body": "New customer @{triggerBody()?['name']} @{triggerBody()?['surname']}!",
+                                "from": "ENTER NUMBER HERE",
+                                "to": "ENTER NUMBER HERE"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['twilio']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/Messages.json"
+                        },
+                        "runAfter": {
+                            "Save_OK_to_Status_db": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Send_email_(V2)": {
+                        "inputs": {
+                            "body": {
+                                "from": "ENTER EMAIL HERE",
+                                "ishtml": true,
+                                "subject": "Thank you!",
+                                "text": "Hi @{triggerBody()?['name']} @{triggerBody()?['surname']}, Thank you for registering!!!!",
+                                "to": "@triggerBody()?['email']"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['sendgrid']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/mail/send"
+                        },
+                        "runAfter": {
+                            "Save_OK_to_Status_db": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Save_error_information_to_Status_db": {
+                            "inputs": {
+                                "body": {
+                                    "Message": "@body('Parse_JSON')?['Errors']",
+                                    "Status": "Error"
+                                },
+                                "headers": {
+                                    "If-Match": "*"
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['azuretables']['connectionId']"
+                                    }
+                                },
+                                "method": "put",
+                                "path": "/Tables/@{encodeURIComponent('status')}/entities/etag(PartitionKey='@{encodeURIComponent('Status')}',RowKey='@{encodeURIComponent(body('Insert_Entity')?['RowKey'])}')"
+                            },
+                            "runAfter": {},
+                            "type": "ApiConnection"
+                        }
+                    }
+                },
+                "expression": "@equals(body('Parse_JSON')?['DataCorrect'], true)",
+                "runAfter": {
+                    "Parse_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "Insert_Entity": {
+                "inputs": {
+                    "body": {
+                        "Message": "",
+                        "PartitionKey": "Status",
+                        "RowKey": "@{guid()}",
+                        "Status": "Processing"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuretables']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/Tables/@{encodeURIComponent('status')}/entities"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Parse_JSON": {
+                "inputs": {
+                    "content": "@body('Validate')",
+                    "schema": {
+                        "properties": {
+                            "DataCorrect": {
+                                "type": "boolean"
+                            },
+                            "Errors": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Validate": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Response": {
+                "inputs": {
+                    "headers": {
+                        "Location": "https://prod-61.westeurope.logic.azure.com:443/workflows/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/triggers/manual/paths/invoke/id/@{body('Insert_Entity')?['RowKey']}?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                    },
+                    "statusCode": 202
+                },
+                "runAfter": {
+                    "Insert_Entity": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "Validate": {
+                "inputs": {
+                    "body": "@triggerBody()",
+                    "function": {
+                        "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/Serverless_Azure_Registration_LogicApp/providers/Microsoft.Web/sites/RequestValidation/functions/Validate"
+                    }
+                },
+                "runAfter": {
+                    "Insert_Entity": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Function"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "properties": {
+                            "birthyear": {
+                                "type": "number"
+                            },
+                            "country": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "surname": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    }
+}

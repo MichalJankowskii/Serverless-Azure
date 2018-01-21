@@ -1,0 +1,159 @@
+{
+    "$connections": {
+        "value": {
+            "facebook_1": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/facebook-2",
+                "connectionName": "facebook-2",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/facebook"
+            },
+            "rss": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/rss",
+                "connectionName": "rss",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/rss"
+            },
+            "sendgrid": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/sendgrid-1",
+                "connectionName": "sendgrid-1",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/sendgrid"
+            },
+            "twitter": {
+                "connectionId": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/connections/twitter-1",
+                "connectionName": "twitter-1",
+                "id": "/subscriptions/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/providers/Microsoft.Web/locations/ukwest/managedApis/twitter"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "Url_Shortener": {
+                        "inputs": {
+                            "body": {
+                                "url": "@triggerBody()?['primaryLink']"
+                            },
+                            "function": {
+                                "id": "/subscriptions/52cda3d1-1af7-4bf2-bc78-6d34ce3b70da/resourceGroups/LogicAppsDemo/providers/Microsoft.Web/sites/LogicAppsExtension/functions/Url_Shortener"
+                            }
+                        },
+                        "runAfter": {},
+                        "type": "Function"
+                    }
+                },
+                "foreach": "@triggerBody()?['categories']",
+                "runAfter": {},
+                "type": "Foreach"
+            },
+            "Post_to_FB": {
+                "actions": {
+                    "Post_to_page": {
+                        "inputs": {
+                            "body": {
+                                "message": "Check: @{triggerBody()?['title']} - @{body('Url_Shortener')}"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['facebook_1']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/@{encodeURIComponent('148960805661172')}/feed"
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Scope"
+            },
+            "Post_to_Twitter": {
+                "actions": {
+                    "Post_a_tweet": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['twitter']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/posttweet",
+                            "queries": {
+                                "tweetText": "Check: @{triggerBody()?['title']}- @{body('Url_Shortener')}"
+                            }
+                        },
+                        "runAfter": {},
+                        "type": "ApiConnection"
+                    }
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Scope"
+            },
+            "Send_email_(V2)": {
+                "inputs": {
+                    "body": {
+                        "from": "ENTER_EMAIL",
+                        "ishtml": true,
+                        "subject": "Posted to social",
+                        "text": "Facebook: @{body('Post_to_page')?['id']}\nTweet id: @{body('Post_a_tweet')['TweetId']}\n\nPage: @{triggerBody()?['primaryLink']}\nShort: @{body('Url_Shortener')}",
+                        "to": "ENTER_EMAIL"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sendgrid']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/mail/send"
+                },
+                "runAfter": {
+                    "Post_to_FB": [
+                        "Succeeded"
+                    ],
+                    "Post_to_Twitter": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_a_feed_item_is_published": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['rss']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/OnNewFeed",
+                    "queries": {
+                        "feedUrl": "http://lorem-rss.herokuapp.com/feed?unit=second&interval=60"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "second",
+                    "interval": 15
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    }
+}

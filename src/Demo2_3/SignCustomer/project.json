@@ -1,0 +1,9 @@
+{
+  "frameworks": {
+    "net46":{
+      "dependencies": {
+        "FluentValidation": "7.1.1"
+      }
+    }
+   }
+}
